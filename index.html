@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LiteCode Hybrid - Ace Editor Complete</title>
+    <!-- Load Ace Editor dari CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/ext-language_tools.js"></script>
+
+    <style>
+        /* Reset & Base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        input, textarea, #editor {
+            user-select: text;
+        }
+
+        body {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        /* Header */
+        .app-header {
+            height: 44px;
+            background: #333;
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-btn {
+            width: 24px;
+            height: 24px;
+            background: none;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-btn:hover {
+            color: #fff;
+        }
+
+        .app-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .app-title span {
+            color: #38bdf8;
+        }
+
+        .tabs {
+            display: flex;
+            height: 100%;
+        }
+
+        .tab-btn {
+            height: 100%;
+            padding: 0 16px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: #ccc;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 44px;
+            bottom: 0;
+            width: 280px;
+            background: #252525;
+            border-right: 1px solid #333;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 89;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        /* File Explorer */
+        .file-explorer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .explorer-header {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-list {
+            font-size: 12px;
+        }
+
+        .file-item, .folder-item {
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 2px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-item:hover, .folder-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-item.active {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+        }
+
+        .folder-children {
+            padding-left: 20px;
+            border-left: 1px dashed #444;
+            margin-left: 8px;
+            display: none;
+        }
+
+        .folder-children.open {
+            display: block;
+        }
+
+        .folder-toggle {
+            font-size: 10px;
+            transition: transform 0.2s;
+            width: 12px;
+            text-align: center;
+        }
+
+        .folder-toggle.open {
+            transform: rotate(90deg);
+        }
+
+        /* Sidebar Actions */
+        .sidebar-actions {
+            padding: 16px;
+            background: #1e1e1e;
+            border-top: 1px solid #333;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: #38bdf8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .action-btn:hover {
+            background: #0ea5e9;
+        }
+
+        .action-btn.settings {
+            background: #555;
+        }
+
+        .action-btn.settings:hover {
+            background: #666;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 44px;
+            height: calc(100vh - 44px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-container, .preview-container {
+            flex: 1;
+            display: none;
+        }
+
+        .editor-container.active, .preview-container.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Editor Header */
+        .editor-header {
+            height: 28px;
+            background: #1e1e1e;
+            border-bottom: 1px solid #333;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            color: #888;
+        }
+
+        .file-path {
+            color: #ccc;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .editor-action {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .editor-action:hover {
+            color: #ccc;
+        }
+
+        /* Ace Editor */
+        #editor {
+            flex: 1;
+            width: 100%;
+        }
+
+        /* Preview */
+        .preview-container iframe {
+            flex: 1;
+            width: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Settings Page - ACE KITCHEN SINK STYLE */
+        .settings-page {
+            position: fixed;
+            top: 44px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #2d2d2d;
+            z-index: 1000;
+            overflow-y: auto;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            padding: 20px;
+            display: none;
+        }
+
+        .settings-page.active {
+            transform: translateX(0);
+            display: block;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #444;
+        }
+
+        .settings-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .close-settings {
+            background: #555;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .close-settings:hover {
+            background: #666;
+        }
+
+        /* Settings Grid - Persis seperti Ace Kitchen Sink */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .settings-column {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .column-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+        }
+
+        .settings-group {
+            margin-bottom: 20px;
+        }
+
+        .group-title {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Setting Items - Persis seperti screenshot */
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            min-height: 32px;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+
+        /* Checkbox style */
+        .checkbox-container {
+            position: relative;
+            width: 36px;
+            height: 20px;
+        }
+
+        .checkbox-container input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .checkbox-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .checkbox-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .checkbox-slider {
+            background-color: #38bdf8;
+        }
+
+        input:checked + .checkbox-slider:before {
+            transform: translateX(16px);
+        }
+
+        /* Select style */
+        .setting-select {
+            background: #333;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            min-width: 120px;
+        }
+
+        /* Input style */
+        .setting-input {
+            background: #333;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            width: 80px;
+        }
+
+        /* Button style */
+        .setting-btn {
+            background: #555;
+            color: #fff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .setting-btn:hover {
+            background: #666;
+        }
+
+        /* Radio buttons */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .radio-label input[type="radio"] {
+            margin: 0;
+        }
+
+        /* Ace-specific settings styling */
+        .ace-settings {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #38bdf8;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1001;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive */
+@media (max-width: 768px) {
+            .sidebar {
+                width: 85%;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-left">
+            <button class="menu-btn" onclick="toggleSidebar()">
+                ☰
+            </button>
+            <div class="app-title">
+                LITECODE <span>HYBRID</span>
+            </div>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('edit')">EDITOR</button>
+            <button class="tab-btn" onclick="switchTab('preview')">PREVIEW</button>
+        </div>
+    </header>
+
+    <!-- Overlay -->
+    <div class="overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="file-explorer">
+            <div class="explorer-header">
+                <span>FILE EXPLORER</span>
+                <div>
+                    <button style="background:none; border:none; color:#888; cursor:pointer; padding:4px;" title="New File">+</button>
+                </div>
+            </div>
+            <div class="file-list" id="fileList">
+                <!-- File items will be added here -->
+            </div>
+        </div>
+
+        <div class="sidebar-actions">
+            <button class="action-btn" onclick="saveCurrentFile()">
+                💾 SAVE
+            </button>
+            <button class="action-btn settings" onclick="openSettings()">
+                ⚙️ SETTINGS
+            </button>
+            <div style="font-size:10px; color:#666; text-align:center; margin-top:8px;">
+                Save to: Internal Storage
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Editor Tab -->
+        <div class="editor-container active" id="editorTab">
+            <div class="editor-header">
+                <span class="file-path" id="currentFile">/index.html</span>
+                <div class="editor-actions">
+                    <button class="editor-action" title="Rename">✏️</button>
+                    <button class="editor-action" title="Delete">🗑️</button>
+                </div>
+            </div>
+            <div id="editor"></div>
+        </div>
+
+        <!-- Preview Tab -->
+        <div class="preview-container" id="previewTab">
+            <iframe id="previewFrame"></iframe>
+        </div>
+    </main>
+
+    <!-- Settings Page - PERSIS ACE KITCHEN SINK -->
+    <div class="settings-page" id="settingsPage">
+        <div class="settings-header">
+            <h2 class="settings-title">Ace Editor Settings - LiteCode Hybrid</h2>
+            <button class="close-settings" onclick="closeSettings()">Close Settings</button>
+        </div>
+
+        <div class="settings-grid">
+            <!-- Column 1: Document & Editor -->
+            <div class="settings-column">
+                <h3 class="column-title">Document & Editor</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Document
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Document HTML</span>
+                        <select class="setting-select">
+                            <option>HTML</option>
+                            <option>CSS</option>
+                            <option>JavaScript</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Split</span>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="split" checked> None
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="split"> Below
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="split"> Beside
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Mode & Theme
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Mode</span>
+                        <select class="setting-select" id="editorMode">
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="php">PHP</option>
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="json">JSON</option>
+                            <option value="xml">XML</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Theme</span>
+                        <select class="setting-select" id="editorTheme">
+                            <option value="monokai">Monokai</option>
+                            <option value="chaos">Chaos</option>
+                            <option value="chrome">Chrome</option>
+                            <option value="clouds">Clouds</option>
+                            <option value="dracula">Dracula</option>
+                            <option value="github">GitHub</option>
+                            <option value="solarized_dark">Solarized Dark</option>
+                            <option value="solarized_light">Solarized Light</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="twilight">Twilight</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Keybinding
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label"></span>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="keybinding" checked> Ace
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="keybinding"> Vim
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="keybinding"> Emacs
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label"></span>
+                        <div class="radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="keybinding2"> Sublime
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="keybinding2"> VSCode
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Display & Cursor -->
+            <div class="settings-column">
+                <h3 class="column-title">Display & Cursor</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Font & Wrap
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Font Size</span>
+                        <input type="number" class="setting-input" id="fontSize" value="14" min="8" max="36">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Soft Wrap</span>
+                        <select class="setting-select">
+                            <option>Off</option>
+                            <option>View</option>
+                            <option>margin 40</option>
+                            <option>margin 80</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Cursor Style</span>
+                        <select class="setting-select">
+                            <option>Ace</option>
+                            <option>Slim</option>
+                            <option>Wide</option>
+                            <option>Smooth</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Folding & Tabs
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Folding Mark</span>
+                        <select class="setting-select">
+                            <option>begin</option>
+                            <option>end</option>
+                            <option>both</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Soft Tabs</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Tab Size</span>
+                        <input type="number" class="setting-input" value="4" min="1" max="8">
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Overscroll</span>
+                        <select class="setting-select">
+                            <option>None</option>
+                            <option>Half</option>
+                            <option>Full</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show diffs</span>
+                        <select class="setting-select">
+                            <option>None</option>
+                            <option>Inline</option>
+                            <option>Margin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Behaviours
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Atomic soft tabs</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Enable Behaviours</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Wrap with quotes</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3: Options & Features -->
+            <div class="settings-column">
+                <h3 class="column-title">Options & Features</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Editor Options
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Wrap with quotes</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Enable Auto Indent</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Full Line Selection</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Highlight Active Line</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Invisibles</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Indent Guides</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Highlight Indent Guides</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 4: More Options -->
+            <div class="settings-column">
+                <h3 class="column-title">More Options</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Scroll & Gutter
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Persistent HScrollbar</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Persistent VScrollbar</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Animate scrolling</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Gutter</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Line Numbers</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Relative Line Numbers</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Fixed Gutter Width</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 5: Selection & Search -->
+            <div class="settings-column">
+                <h3 class="column-title">Selection & Search</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Selection
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Highlight selected word</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Fade Fold Widgets</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Use textarea for IME</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Merge Undo Deltas</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Elastic Tabstops</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Incremental Search</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Read-only & Copy
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Read-only</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Copy without selection</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Live Autocompletion</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Custom scrollbar</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 6: Advanced & RTL -->
+            <div class="settings-column">
+                <h3 class="column-title">Advanced & RTL</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Advanced Features
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Use SVG gutter icons</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Annotations for folded lines</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Keyboard Accessibility</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Mode</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">RTL</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        RTL & Debug
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Line based RTL switching</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show token info</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Inline preview for autocomplete</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Textarea Position</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Text Input Debugger</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Use Ace Linters</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Info
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Version</span>
+                        <span style="color: #888; font-size: 12px;">1.43.5</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Edit Snippets</span>
+                        <button class="setting-btn">Edit</button>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Browser Info</span>
+                        <button class="setting-btn">Show</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 7: Testing Controls -->
+            <div class="settings-column">
+                <h3 class="column-title">Testing Controls</h3>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Test Panel
+                    </div>
+                    <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <button class="setting-btn" style="flex: 1;">Test</button>
+                            <input type="number" class="setting-input" value="0" style="width: 60px;">
+                            <button class="setting-btn" style="flex: 1;">Record</button>
+                        </div>
+                        <div style="display: flex; gap: 8px; width: 100%;">
+                            <button class="setting-btn" style="flex: 1;">Stop</button>
+                            <button class="setting-btn" style="flex: 1;">Play</button>
+                            <button class="setting-btn" style="flex: 1;">X</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-item">
+                        <span class="setting-label">Open Dialog</span>
+                        <button class="setting-btn">Open</button>
+                    </div>
+
+                    <div class="setting-item">
+                        <span class="setting-label">Scale</span>
+                        <input type="number" class="setting-input" value="100" min="50" max="200" step="10">%
+                    </div>
+
+                    <div class="setting-item">
+                        <span class="setting-label">Height</span>
+                        <input type="number" class="setting-input" value="400" min="200" max="800">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="group-title">
+                        Other Options
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Show Print Margin</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox" checked>
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">Indented Soft Wrap</span>
+                        <label class="checkbox-container">
+                            <input type="checkbox">
+                            <span class="checkbox-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #444;">
+            <button class="action-btn" style="width: 200px; margin: 0 auto;" onclick="applySettings()">
+                APPLY SETTINGS
+            </button>
+            <div style="font-size: 11px; color: #666; margin-top: 10px;">
+                Settings will be applied to the current editor session
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // =================== GLOBAL VARIABLES ===================
+        let editor;
+        let currentFile = 'index.html';
+        let sidebarOpen = false;
+        let currentTab = 'edit';
+
+        // File structure
+        const fileSystem = {
+            'index.html': `<!DOCTYPE html>
+            <html>
+            <head>
+            <title>LiteCode Hybrid App</title>
+            <style>
+            body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px;
+            text-align: center;
+            }
+            .container {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            }
+            button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            }
+            </style>
+            </head>
+            <body>
+            <div class="container">
+            <h1>🎉 LiteCode Hybrid!</h1>
+            <p>Edit code in editor and see preview instantly.</p>
+            <button onclick="alert('Hello from LiteCode!')">Click Me</button>
+            </div>
+            </body>
+            </html>`,
+            'style.css': `/* Main CSS file */
+            body {
+            margin: 0;
+            padding: 20px;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #f8fafc;
+            }
+
+            .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            }
+
+            .btn {
+            background: #38bdf8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            }`,
+            'app.js': `// Main JavaScript file
+            console.log('LiteCode Hybrid App Loaded');
+
+            function initApp() {
+            console.log('App initialized');
+            // Add your code here
+            }
+
+            document.addEventListener('DOMContentLoaded', initApp);`
+        };
+
+        // =================== INITIALIZATION ===================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Ace Editor
+            editor = ace.edit("editor");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/html");
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true,
+                enableSnippets: true,
+                showLineNumbers: true,
+                showGutter: true,
+                highlightActiveLine: true,
+                showPrintMargin: true,
+                fontSize: 14,
+                tabSize: 4,
+                wrap: true,
+                useSoftTabs: true,
+                showInvisibles: false,
+                showIndentGuides: true
+            });
+
+            // Load initial file
+            loadFile('index.html');
+
+            // Render file list
+            renderFileList();
+
+            // Setup settings controls
+            setupSettingsControls();
+
+            console.log('LiteCode Hybrid initialized');
+        });
+
+        // =================== FILE SYSTEM FUNCTIONS ===================
+        function renderFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+
+            Object.keys(fileSystem).forEach(filename => {
+                const div = document.createElement('div');
+                div.className = `file-item ${filename === currentFile ? 'active': ''}`;
+                div.onclick = () => loadFile(filename);
+
+                let icon = '📄';
+                if (filename.endsWith('.html')) icon = '🌐';
+                if (filename.endsWith('.css')) icon = '🎨';
+                if (filename.endsWith('.js')) icon = '⚡';
+
+                div.innerHTML = `${icon} ${filename}`;
+                fileList.appendChild(div);
+            });
+        }
+
+        function loadFile(filename) {
+            currentFile = filename;
+            editor.setValue(fileSystem[filename] || '',
+                -1);
+
+            // Set mode based on extension
+            const ext = filename.split('.').pop();
+            if (ext === 'css') {
+                editor.session.setMode("ace/mode/css");
+            } else if (ext === 'js') {
+                editor.session.setMode("ace/mode/javascript");
+            } else {
+                editor.session.setMode("ace/mode/html");
+            }
+
+            document.getElementById('currentFile').textContent = `/${filename}`;
+            renderFileList();
+
+            // Update preview if in preview mode
+            if (currentTab === 'preview') {
+                updatePreview();
+            }
+        }
+
+        function saveCurrentFile() {
+            fileSystem[currentFile] = editor.getValue();
+            showToast('File saved successfully');
+            toggleSidebar();
+        }
+
+        // =================== UI FUNCTIONS ===================
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+
+            sidebarOpen = !sidebarOpen;
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            // Update active tab button
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toUpperCase() === tab.toUpperCase());
+            });
+
+            // Show/hide tabs
+            document.getElementById('editorTab').classList.toggle('active', tab === 'edit');
+            document.getElementById('previewTab').classList.toggle('active', tab === 'preview');
+
+            if (tab === 'preview') {
+                updatePreview();
+            } else {
+                editor.resize();
+            }
+        }
+
+        function updatePreview() {
+            const iframe = document.getElementById('previewFrame');
+            const doc = iframe.contentDocument || iframe.contentWindow.document;
+            const userCode = editor.getValue();
+            const erudaInjection = `
+            <script src='eruda.min.js'></scr` + `ipt>
+            <script>eruda.init();</scr` + `ipt>
+            `;
+            const finalCode = userCode.replace("</head>", erudaInjection + "</head>");
+            doc.open();
+            doc.write(finalCode);
+            doc.close();
+        }
+
+        // =================== SETTINGS FUNCTIONS ===================
+        function openSettings() {
+            document.getElementById('settingsPage').classList.add('active');
+            toggleSidebar();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsPage').classList.remove('active');
+        }
+
+        function setupSettingsControls() {
+            // Theme selector
+            document.getElementById('editorTheme').addEventListener('change', function() {
+                editor.setTheme("ace/theme/" + this.value);
+            });
+
+            // Font size
+            document.getElementById('fontSize').addEventListener('input', function() {
+                editor.setFontSize(this.value + 'px');
+            });
+
+            // Mode selector
+            document.getElementById('editorMode').addEventListener('change', function() {
+                editor.session.setMode("ace/mode/" + this.value);
+            });
+        }
+
+        function applySettings() {
+            // Apply all settings from the form
+            const fontSize = document.getElementById('fontSize').value;
+            const theme = document.getElementById('editorTheme').value;
+            const mode = document.getElementById('editorMode').value;
+
+            editor.setFontSize(fontSize + 'px');
+            editor.setTheme("ace/theme/" + theme);
+            editor.session.setMode("ace/mode/" + mode);
+
+            // Apply checkbox settings
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                const label = cb.closest('.setting-item')?.querySelector('.setting-label')?.textContent;
+                if (label) {
+                    switch (label.trim()) {
+                        case 'Show Invisibles':
+                            editor.setOption('showInvisibles', cb.checked);
+                            break;
+                        case 'Show Indent Guides':
+                            editor.setOption('showIndentGuides', cb.checked);
+                            break;
+                        case 'Show Print Margin':
+                            editor.setOption('showPrintMargin', cb.checked);
+                            break;
+                        case 'Highlight Active Line':
+                            editor.setOption('highlightActiveLine', cb.checked);
+                            break;
+                        case 'Show Line Numbers':
+                            editor.setOption('showLineNumbers', cb.checked);
+                            break;
+                        case 'Show Gutter':
+                            editor.setOption('showGutter', cb.checked);
+                            break;
+                        case 'Enable Auto Indent':
+                            editor.setOption('enableAutoIndent', cb.checked);
+                            break;
+                        case 'Live Autocompletion':
+                            editor.setOption('enableLiveAutocompletion', cb.checked);
+                            break;
+                    }
+                }
+            });
+
+            showToast('Settings applied successfully');
+            closeSettings();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            },
+                2000);
+        }
+
+        // =================== KEYBOARD SHORTCUTS ===================
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S or Cmd+S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveCurrentFile();
+            }
+
+            // Ctrl+E or Cmd+E for editor
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                switchTab('edit');
+            }
+
+            // Ctrl+P or Cmd+P for preview
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                switchTab('preview');
+            }
+
+            // Escape to close sidebar or settings
+            if (e.key === 'Escape') {
+                if (sidebarOpen) {
+                    toggleSidebar();
+                }
+                if (document.getElementById('settingsPage').classList.contains('active')) {
+                    closeSettings();
+                }
+            }
+        });
+
+        // =================== WINDOW RESIZE ===================
+        window.addEventListener('resize', function() {
+            editor.resize();
+        });
+    </script>
+</body>
+</html>
