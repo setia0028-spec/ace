@@ -616,7 +616,7 @@
 
         <!-- Preview Tab -->
         <div class="preview-container" id="previewTab">
-            <iframe id="previewFrame"></iframe>
+            <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin"></iframe>
         </div>
     </main>
 
@@ -1415,18 +1415,24 @@
         }
 
         function updatePreview() {
-            const iframe = document.getElementById('previewFrame');
-            const doc = iframe.contentDocument || iframe.contentWindow.document;
-            const userCode = editor.getValue();
-            const erudaInjection = `
-            <script src='eruda.min.js'></scr` + `ipt>
-            <script>eruda.init();</scr` + `ipt>
-            `;
-            const finalCode = userCode.replace("</head>", erudaInjection + "</head>");
-            doc.open();
-            doc.write(finalCode);
-            doc.close();
+    const iframe = document.getElementById('previewFrame');
+    iframe.srcdoc = ""; // Reset dulu
+    
+    const userCode = editor.getValue();
+    const erudaInjection = `
+    <script src='eruda.min.js'></scr` + `ipt>
+    <script>
+        // Cek apakah eruda sudah ada
+        if (typeof eruda !== 'undefined' && eruda._isInit) {
+            eruda.destroy();
         }
+        eruda.init();
+    </scr` + `ipt>
+    `;
+    
+    const finalCode = userCode.replace("</head>", erudaInjection + "</head>");
+    iframe.srcdoc = finalCode;
+}
 
         // =================== SETTINGS FUNCTIONS ===================
         function openSettings() {
