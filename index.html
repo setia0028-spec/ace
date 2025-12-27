@@ -1421,21 +1421,15 @@
     
     const userCode = editor.getValue();
     const erudaInjection = `
-<script src='eruda.min.js'></scr` + `ipt>
-<script>
-    if (typeof eruda !== 'undefined' && eruda._isInit) {
-        eruda.destroy();
-    }
-    eruda.init();
-    
-    // FORCE SHOW - tambahkan ini
-    eruda.show();
-    
-    // Atau set size untuk selalu mobile
-    eruda._devTools._style.setStyle('width', '375px');
-    eruda._devTools._style.setStyle('height', '667px');
-</scr` + `ipt>
-`;
+    <script src='eruda.min.js'></scr` + `ipt>
+    <script>
+        // Cek apakah eruda sudah ada
+        if (typeof eruda !== 'undefined' && eruda._isInit) {
+            eruda.destroy();
+        }
+        eruda.init();
+    </scr` + `ipt>
+    `;
     
     const finalCode = userCode.replace("</head>", erudaInjection + "</head>");
     iframe.srcdoc = finalCode;
