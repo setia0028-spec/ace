@@ -1423,54 +1423,17 @@
     const erudaInjection = `
 <script src='eruda.min.js'></scr` + `ipt>
 <script>
-    // Destroy existing
-    if (window.eruda && window.eruda._isInit) {
-        window.eruda.destroy();
+    if (typeof eruda !== 'undefined' && eruda._isInit) {
+        eruda.destroy();
     }
-    
-    // Initialize
     eruda.init();
     
-    // Force show dengan delay
-    setTimeout(() => {
-        eruda.show();
-        
-        // Manipulasi DOM langsung (paling aman)
-        const style = document.createElement('style');
-        style.textContent = \`
-            .eruda-container * {
-                box-sizing: border-box;
-            }
-            .eruda-entry-btn {
-                all: initial !important;
-                position: fixed !important;
-                right: 10px !important;
-                bottom: 10px !important;
-                width: 40px !important;
-                height: 40px !important;
-                background: #4CAF50 !important;
-                color: white !important;
-                border-radius: 50% !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 18px !important;
-                cursor: pointer !important;
-                z-index: 1000000 !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-            .eruda-entry-btn::before {
-                content: "📱" !important;
-            }
-            .eruda-dev-tools {
-                width: 375px !important;
-                height: 667px !important;
-                max-height: 667px !important;
-            }
-        \`;
-        document.head.appendChild(style);
-    }, 100);
+    // FORCE SHOW - tambahkan ini
+    eruda.show();
+    
+    // Atau set size untuk selalu mobile
+    eruda._devTools._style.setStyle('width', '375px');
+    eruda._devTools._style.setStyle('height', '667px');
 </scr` + `ipt>
 `;
     
